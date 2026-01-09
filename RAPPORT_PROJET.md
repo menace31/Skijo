@@ -53,7 +53,7 @@ Skijo/
 
 **Méthodes clés** :
 ```python
-creat_deck()      # Création du paquet
+creat_deck()      # Création du paquet (Note: typo dans le nom original)
 shuffle_deck()    # Mélange du paquet
 pick_card()       # Pioche d'une carte
 ```
@@ -100,7 +100,7 @@ compute_score()      # Calcul du score total
 
 **Méthodes clés** :
 ```python
-init_game(players_name)      # Initialisation de la partie
+init_game(players_name)      # Initialisation de la partie (paramètre: liste de noms)
 pick_from_deck()             # Piocher du paquet
 pick_from_pile()             # Piocher de la défausse
 next_player()                # Passer au joueur suivant
@@ -200,8 +200,8 @@ while scores["Maxime"]["win"] < 3 and scores["Antoine"]["win"] < 3:
 ### 6.2 Points à améliorer
 
 #### 6.2.1 Interface utilisateur
-- **Limitation actuelle** : L'interface détruit et recrée la fenêtre à chaque manche (ligne 103 de skyjoApp.py)
-- **Impact** : Expérience utilisateur interrompue
+- **Limitation actuelle** : L'interface détruit et recrée la fenêtre à chaque manche (ligne 103 pour suppression de colonne, ligne 124 en fin de partie dans skyjoApp.py)
+- **Impact** : Expérience utilisateur interrompue entre les manches
 - **Recommandation** : Implémenter un système de réinitialisation sans destruction de fenêtre
 
 #### 6.2.2 Gestion des tours
@@ -319,4 +319,4 @@ Le projet est dans un état satisfaisant pour un prototype et peut servir de bas
 **Date du rapport** : Janvier 2026  
 **Version analysée** : Commit 16157e0  
 **Nombre de fichiers** : 7 fichiers Python principaux  
-**Lignes de code** : ~300 lignes (estimation)
+**Lignes de code** : 290 lignes (hors commentaires et lignes vides)
