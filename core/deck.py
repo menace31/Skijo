@@ -1,14 +1,17 @@
 import random
 
 class Deck:
-
+    '''
+    class Deck to manage the skyjo deck
+    '''
     def __init__(self):
-        self.deck = self.creat_deck()
+        self.deck = self.create_deck()
 
     
-    def creat_deck(self):
+    def create_deck(self):
         '''
-        creat a new deck
+        create a new official skyjo deck
+        150 cards:
         '''
         sorted_deck = []
         for i in range(-2,13):

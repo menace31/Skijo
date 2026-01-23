@@ -1,7 +1,8 @@
 from core.player_base import SkyjoPlayer
+from bots.bot_tools import *
 import random
 
-class RandomBot(SkyjoPlayer):
+class MaximeBot2(SkyjoPlayer):
     '''
     A bot that doesn't take account of the game and just plays randomly
     '''
@@ -22,7 +23,13 @@ class RandomBot(SkyjoPlayer):
         :return: a dictionary with the key "action"
         '''
         decison = {"action": None}  # action can be "deck" or "pile"
-        decison["action"] = random.choice(["deck", "pile"])
+        max_card = max_card_in_grid(public_state["players"][self.name]["grid"])
+        print(public_state["discard_top"])
+        if public_state["discard_top"] < max_card["value"]:
+            decison["action"] = "pile"
+        else:
+            decison["action"] = "deck"
+        print(decison)
         return decison
     
     def replace_decision(self, public_state):
@@ -35,14 +42,20 @@ class RandomBot(SkyjoPlayer):
         """
         decision = {"action": None, "card_name": None} # action can be "replace" or "look" and card_name is the name of the card to replace or look at
         
-        decision["action"] = random.choice(["replace", "look"])
-        name = self.name
-        self_grid = public_state["players"][name]["grid"]
-        if decision["action"] == "look":
-            choices = [card for card, data in self_grid.items() if not data.get("removed", False) and not data.get("visible", False)]
+        max_card = max_card_in_grid(public_state["players"][self.name]["grid"])
+        if public_state["discard_top"] < max_card["value"]:
+            decision["action"] = "replace"
+            decision["card_name"] = max_card["name"]
         else:
-            choices = [card for card, data in self_grid.items() if not data.get("removed", False)]
-        if not choices:
-            return None
-        decision["card_name"] = random.choice(choices)
+            decision["action"] = "look"
+
+            name = self.name
+            self_grid = public_state["players"][name]["grid"]
+            if decision["action"] == "look":
+                choices = [card for card, data in self_grid.items() if not data.get("removed", False) and not data.get("visible", False)]
+            else:
+                choices = [card for card, data in self_grid.items() if not data.get("removed", False) and not data.get("visible", False)]
+            if not choices:
+                return None
+            decision["card_name"] = random.choice(choices)
         return decision

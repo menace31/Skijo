@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 import time
 
 
-class SkyjoApp:
+class SkyjoApp_gui:
     """Main application class for the Skyjo game GUI."""
     
     def __init__(self, root: tk.Tk, game, scores):
@@ -13,44 +13,107 @@ class SkyjoApp:
         Initializes the Skyjo application GUI.
         """
         self.scores = scores
+        self.root = root
+        self.root.title("Skyjo")
         self.game = game
+        self.root.geometry("700x1200")
         self.boutons_cardes = {}
 
         self.is_selected = "nothing"
         self.selected_card = None
 
         self.card_images = {}
+
+        for i in range(-2, 13):
+            self.card_images[i] = self.import_image(f"assets/cards/{i}.png", (80, 120))
+        
+        self.card_images["?"] = self.import_image("assets/cards/card_back.png", (80, 120))
+
         self.players_name = list(self.game.players.keys())
+        for name in self.players_name[:len(self.players_name)//2]:
+            self.create_grid(name)
+
+        controls_frame = ttk.Frame(self.root)
+        controls_frame.pack(pady=100)
+
+        self.deck_button = ttk.Button(controls_frame, image=self.card_images["?"], command=self.pick_deck_card)
+        self.deck_button.pack(side="left", padx=5)
+
+        self.pile_button = ttk.Button(controls_frame, image=self.card_images[self.game.discard_pile[-1]], command=self.click_discard_pile)
+        self.pile_button.pack(side="left", padx=5)
+
+        for name in self.players_name[len(self.players_name)//2:]:
+            self.create_grid(name)
         
         self.bot_play_turn()
 
+    def import_image(self, path, size):
+        card_image = Image.open(path)
+        try:
+            resample = Image.Resampling.LANCZOS
+        except AttributeError:
+            resample = Image.LANCZOS
+        card_image = card_image.resize(size, resample)
+        return ImageTk.PhotoImage(card_image)
+    
+    def create_grid(self, name):
+        """Create the GUI grid for each player."""
+        self.grid_frame = ttk.Frame(self.root)
+        self.grid_frame.pack(pady=10)
+
+        self.boutons_cardes[name] = {}
+        for row in range(3):
+            for col in range(4):
+                cmd=lambda r=row, c=col: self.on_card_click(name,r, c)
+                card_button = ttk.Button(self.grid_frame, name=f"carte_{row * 4 + col + 1}", command=cmd)
+                card_button.config(image=self.card_images["?"])
+                if row == 0 and col < 2:
+                    card_button.config(image=self.card_images[self.game.players[name].grid[card_button._name]["value"]])
+                    self.game.players[name].grid[card_button._name]["visible"] = True
+                card_button.grid(row=row, column=col, padx=5, pady=5)
+                self.boutons_cardes[name][card_button._name] = card_button
+
     def on_card_click(self, name, row, col, is_bot=False):
         if self.game.current_player.name == name and self.is_selected != "nothing":
+            bouton = self.boutons_cardes[name].get(f"carte_{row * 4 + col + 1}")
             old_card_name = f"carte_{row * 4 + col + 1}"
+            if bouton is None:
+                return
+
             if self.is_selected == "pile":
                 # Prendre la carte du dessus de la défausse, envoyer l'ancienne à la défausse
                 carte_value = self.game.pick_from_pile()
+                
                 self.game.put_discard_card(name, old_card_name)
+                bouton.config(image=self.card_images[carte_value])
                 self.game.players[name].grid[old_card_name] = {"value": carte_value, "visible": True, "removed": False}
 
             elif self.is_selected == "deck":
                 if self.game.players[name].grid[old_card_name]["visible"]:
                     raise ValueError("Error: The card to observe is already visible.")
                 selected_card = self.game.players[name].grid[old_card_name]["value"]
+                bouton.config(image=self.card_images[selected_card])
                 self.game.players[name].grid[old_card_name]["visible"] = True
                 self.selected_card = None
 
+            self.update_pile()
             self.check_col(name,row,col)
             self.is_selected = "nothing"
             self.handle_end_of_turn()
 
+
     def pick_deck_card(self):
         if self.is_selected != "deck":
             self.is_selected = "deck"
-            self.game.pick_from_deck()
+            selected_card = self.game.pick_from_deck()
+            # Affiche la carte tirée pour information
+            self.pile_button.config(image=self.card_images[selected_card])
 
     def click_discard_pile(self):
         self.is_selected = "pile"
+
+    def update_pile(self):
+        self.pile_button.config(image=self.card_images[self.game.get_discard_card()])
 
     def check_col(self,name,row,col):
         # Check if the 3 cards in the column are identical
@@ -69,6 +132,9 @@ class SkyjoApp:
     def remove_col(self,name,number):
         for i in range(3):
             card_name = f"carte_{(i * 4 + number)}"
+            bouton = self.boutons_cardes[name].get(card_name)
+            if bouton:
+                bouton.destroy()
             self.game.players[name].grid[card_name]["value"] = 0
             self.game.players[name].grid[card_name]["visible"] = True
             self.game.players[name].grid[card_name]["removed"] = True
@@ -94,10 +160,13 @@ class SkyjoApp:
                             self.scores[n]["score"] = 0
 
             print("Final scores:", self.scores)
+            self.root.destroy()
         else:
             self.game.next_player()
-            #self.print_game()
-            self.bot_play_turn()
+            self.waiting()
+        
+    def waiting(self):
+        self.root.after(1000, lambda: self.bot_play_turn())
             
     
     def bot_play_turn(self):
@@ -131,23 +200,3 @@ class SkyjoApp:
                 
                 else:
                     raise ValueError(f"Invalid decision from bot {current_player.name} in function \"replace_decision(public_state)\": card to replace is None")
-
-    def print_game(self):
-        for name, player in self.game.players.items():
-            print(f"Player: {name}")
-            for row in range(3):
-                row_values = []
-                for col in range(4):
-                    card_name = f"carte_{row * 4 + col + 1}"
-                    card = player.grid[card_name]
-                    if card["removed"]:
-                        row_values.append(" X ")
-                    elif card["visible"]:
-                        row_values.append(f"{card['value']:2d}")
-                    else:
-                        row_values.append(" ? ")
-                print(" | ".join(row_values))
-            print(f"Score: {player.score}")
-        print("Deck count:", len(self.game.deck.deck))
-        print("Discard pile top:", self.game.discard_pile[-1] if self.game.discard_pile else None)
-        print("-" * 20)

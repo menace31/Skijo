@@ -1,7 +1,8 @@
 from core.player_base import SkyjoPlayer
+from bots.bot_tools import *
 import random
 
-class RandomBot(SkyjoPlayer):
+class MaximeBot(SkyjoPlayer):
     '''
     A bot that doesn't take account of the game and just plays randomly
     '''
@@ -22,7 +23,10 @@ class RandomBot(SkyjoPlayer):
         :return: a dictionary with the key "action"
         '''
         decison = {"action": None}  # action can be "deck" or "pile"
-        decison["action"] = random.choice(["deck", "pile"])
+        if public_state["discard_top"] <= 4:
+            decison["action"] = "pile"
+        else:
+            decison["action"] = "deck"
         return decison
     
     def replace_decision(self, public_state):
@@ -41,7 +45,7 @@ class RandomBot(SkyjoPlayer):
         if decision["action"] == "look":
             choices = [card for card, data in self_grid.items() if not data.get("removed", False) and not data.get("visible", False)]
         else:
-            choices = [card for card, data in self_grid.items() if not data.get("removed", False)]
+            choices = [card for card, data in self_grid.items() if not data.get("removed", False) and not data.get("visible", False)]
         if not choices:
             return None
         decision["card_name"] = random.choice(choices)
